@@ -4,7 +4,9 @@ namespace App\Http\Controllers\APIs;
 
 use App\Models\Post;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller\APIs;
 use Illuminate\Support\Facades\Validator;
 
@@ -23,34 +25,34 @@ class PostController extends Controller
                 'content' => $post->content,
 
             ];
-        });   $response =
-        [
-            "sattus" => 200,
-            "data" => $AllPosts,
-            "message" => "All posts data"
+        });
+        $response =
+            [
+                "sattus" => 200,
+                "data" => $AllPosts,
+                "message" => "All posts data"
 
-        ];
-    return response($response, 200);
+            ];
+        return response($response, 200);
     }
 
     public function store(Request $request)
-    {  $request->validate([
-        'user_id' => 'required|numeric',
-        'content' => 'required|string|min:6|max:300',
-    ]);
+    {
+        $request->validate([
+            'content' => 'required|string|min:6|max:300',
+        ]);
 
-    $post = new post();
-    $post->user_id = $request->user_id;
-    $post->content = $request->content;
-    $post->save();
-    $response =
-        [
-            "sattus" => 200,
-            "data" => $post,
-            "message" => "the post created successfully"
-        ];
+        $post = new post();
+        $post->user_id = Auth::user()->id;
+        $post->content = $request->content;
+        $post->save();
+        $response =
+            [
+                "sattus" => 200,
+                "data" => $post,
+                "message" => "the post created successfully"
+            ];
         return response($response, 200);
-
     }
 
     public function show($id)
@@ -74,44 +76,44 @@ class PostController extends Controller
     }
 
 
-        public function update(Request $request, $id)
-        {
-            // 1. التحقق من الصحة (Validation)
-            $validator = Validator::make($request->all(), [
-                'content' => 'required|string|max:300', // مثال: تحقق من أن المحتوى مطلوب ولا يتجاوز 1000 حرف
-                'user_id' => 'sometimes|exists:students,id', // تحقق من أن user_id موجود في جدول المستخدمين (إذا تم إرساله)
-            ]);
+    public function update(Request $request, $id)
+    {
+        // 1. التحقق من الصحة (Validation)
+        $validator = Validator::make($request->all(), [
+            'content' => 'required|string|max:300', // مثال: تحقق من أن المحتوى مطلوب ولا يتجاوز 1000 حرف
+            'user_id' => 'sometimes|exists:students,id', // تحقق من أن user_id موجود في جدول المستخدمين (إذا تم إرساله)
+        ]);
 
-            // إذا فشل التحقق من الصحة، أرجع رسائل الخطأ
-            if ($validator->fails()) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors(),
-                ], 422); // 422: Unprocessable Entity
-            }
-
-            // 2. البحث عن المنشور المطلوب
-            $post = Post::find($id);
-
-            // إذا لم يتم العثور على المنشور، أرجع رسالة خطأ
-            if (!$post) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Post not found',
-                ], 404); // 404: Not Found
-            }
-
-            // 3. تحديث المنشور بالبيانات الصحيحة
-            $post->update($validator->validated());
-
-            // 4. إرجاع استجابة JSON مع رسالة نجاح
+        // إذا فشل التحقق من الصحة، أرجع رسائل الخطأ
+        if ($validator->fails()) {
             return response()->json([
-                'status' => 'success',
-                'message' => 'Post updated successfully',
-                'data' => $post,
-            ], 200); // 200: OK
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422); // 422: Unprocessable Entity
         }
+
+        // 2. البحث عن المنشور المطلوب
+        $post = Post::find($id);
+
+        // إذا لم يتم العثور على المنشور، أرجع رسالة خطأ
+        if (!$post) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Post not found',
+            ], 404); // 404: Not Found
+        }
+
+        // 3. تحديث المنشور بالبيانات الصحيحة
+        $post->update($validator->validated());
+
+        // 4. إرجاع استجابة JSON مع رسالة نجاح
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Post updated successfully',
+            'data' => $post,
+        ], 200); // 200: OK
+    }
 
 
     public function destroy($id)
@@ -119,4 +121,17 @@ class PostController extends Controller
         $post = Post::find($id);
         $post->delete();
         return response()->json(['message' => 'Post deleted successfully.']);
-    }}
+    }
+    public function getallposts()
+    {
+        // جلب جميع البيانات من الـ View
+        $postswithcomments = DB::table('posts_with_comments')->get();
+
+        $response =
+        [
+            "sattus" => 200,
+            "data" => $postswithcomments,
+            "message" => "all posts with its comments dear"
+        ];return response($response, 200);
+    }
+}

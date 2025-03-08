@@ -5,6 +5,7 @@ namespace App\Http\Controllers\APIs;
 use App\Models\User;
 use App\Models\Student;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -43,7 +44,9 @@ class studentcontroller extends Controller
         $request->validate([
             'gender' => 'required|in:Male,Female',
             'grade_level' => 'required|exists:grade_levels,id',
+            'student_id'=>'unique:students,student_id'
         ]);
+        $id =$user->id;
 
         $student_id = rand(1000000, 9999999);
 
@@ -56,39 +59,40 @@ class studentcontroller extends Controller
         $student->grade_level = $request->grade_level;
         $student->save();
         $token = $user->createToken("user_token")->plainTextToken;
-
         $response =
             [
                 "sattus" => 200,
                 "data" => $student,
                 "token" => $token,
-                "message" => "the student created successfully"
+                "message" => "Dear student you are now registed go to login"
 
             ];
         return response($response, 200);
     }
 
-    // عرض بيانات طالب محدد
     public function show($id)
     {
-        $student = Student::with('gradeLevel')->findOrFail($id);
+        // جلب الطالب مع البيانات المرتبطة
+        $student = Student::with('gradeLevel')->find($id);
 
-        if ($student == null) {
-            $response =
-                [
-                    "sattus" => 404,
-                    "message" => "No found student data"
-                ];
-        } else {
-            $response =
-                [
-                    "sattus" => 200,
-                    "data" => $student,
-                    "message" => "student data"
-                ];
+        // التحقق مما إذا كان الطالب موجودًا
+        if (!$student) {
+            $response = [
+                "status" => 404, // تعديل الخطأ الإملائي
+                "message" => "No student data found"
+            ];
+            return response()->json($response, 404);
         }
-        return response($response, 200);
+
+        // إذا كان الطالب موجودًا
+        $response = [
+            "status" => 200,
+            "data" => $student,
+            "message" => "Student data retrieved successfully"
+        ];
+        return response()->json($response, 200);
     }
+
 
     // تحديث بيانات طالب
     public function update(Request $request, $id)
@@ -118,5 +122,63 @@ class studentcontroller extends Controller
 
         return response()->json(['message' => 'Student deleted successfully']);
     }
+    public function search($id)
+    {
+        // البحث عن الطالب بناءً على student_id
+        $student = Student::where('student_id', $id)->first();
+
+        // التحقق مما إذا كان الطالب موجودًا
+        if ($student) {
+            $response =
+            [
+                "sattus" => 200,
+                "data" => $student,
+                "message" => "student data"
+            ];
+        }else{
+
+        $response =
+        [
+            "sattus" => 404,
+            "message" => "student not found"
+        ];
+
+    }
+    return response($response, 200);
+}
+public function getallranks()
+{
+    // جلب جميع البيانات من الـ View
+    $studentRanks = DB::table('student_rank_view')->select('student_id', 'student_name', 'total_points','rank')
+    ->get();
+
+    // إرجاع البيانات بصيغة JSON
+    $response =
+    [
+        "status" => 200,
+        "data" => $studentRanks,
+        "message" => "student ranks "
+    ];return response($response, 200);
+}
+public function profile()
+{
+    // جلب بيانات المستخدم الحالي
+    $user = Auth::user();
+
+    // التحقق مما إذا كان المستخدم مسجل دخول
+    if (!$user) {
+        return response()->json([
+            "status" => 401,
+            "message" => "Unauthorized - User not logged in"
+        ], 401);
+    }
+
+    return response()->json([
+        "status" => 200,
+        "data" => $user,
+        "message" => "User profile retrieved successfully"
+    ], 200);
+}
 
 }
+

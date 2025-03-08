@@ -41,20 +41,6 @@ return [
             'provider' => 'users',
         ],
     ],
-    'guards' => [
-        'student' => [
-            'driver' => 'session',
-            'provider' => 'students',
-        ],
-    ],
-
-    'providers' => [
-        'students' => [
-            'driver' => 'eloquent',
-            'model' => App\Models\Student::class, // استخدام نموذج الطلاب
-        ],
-    ],
-
 
     /*
     |--------------------------------------------------------------------------

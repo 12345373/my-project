@@ -45,5 +45,20 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    } protected $casts = [
+        'is_online' => 'boolean',
+    ];
+
+    public function broadcastOn()
+    {
+        return new \Illuminate\Broadcasting\Channel('user-status');
+    }
+
+    public function broadcastWith()
+    {
+        return [
+            'id' => $this->id,
+            'is_online' => $this->is_online,
+        ];
     }
 }
